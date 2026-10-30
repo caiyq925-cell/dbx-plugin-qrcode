@@ -101,7 +101,17 @@
         font-weight: 600; list-style: none; user-select: none; opacity: .85;
       }
       details.styleset summary::-webkit-details-marker { display: none; }
-      details.styleset summary::after { content: "▸"; margin-left: auto; opacity: .5; font-size: 11px; transition: transform .15s ease; }
+      details.styleset summary::after { content: "▸"; margin-left: 12px; opacity: .5; font-size: 11px; transition: transform .15s ease; }
+      details.styleset summary .summary-reset { margin-left: auto; }
+      .rowcolors { display: grid; grid-template-columns: 1.15fr 1.15fr auto; gap: 6px 14px; align-items: end; margin-bottom: 10px; }
+      .rowcolors .check { margin: 0 0 8px; white-space: nowrap; }
+      .row2col { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; margin-bottom: 10px; }
+      .row2col .field { margin-bottom: 0; }
+      .row2col select { width: 100%; }
+      .shapeseg { display: inline-flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--field); }
+      .shapeopt { padding: 8px 16px; border: 0; background: none; color: inherit; cursor: pointer; display: grid; place-items: center; opacity: .5; }
+      .shapeopt + .shapeopt { border-left: 1px solid var(--border); }
+      .shapeopt[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 24%, Canvas); color: var(--accent); opacity: 1; }
       details.styleset[open] summary::after { transform: rotate(90deg); }
       details.styleset .stylebody { padding: 2px 14px 12px; }
       details.history { margin-top: 20px; border: 1px solid var(--border); border-radius: var(--radius); }
@@ -250,50 +260,58 @@
       </div>
 
       <details class="styleset" id="styleBox">
-        <summary id="styleSummary"></summary>
+        <summary><span id="styleSummary"></span><button class="ghostbtn summary-reset" id="resetStyle" type="button"></button></summary>
         <div class="stylebody">
-        <div class="grid2">
-          <div class="field"><label id="fgLabel"></label>
-            <div class="colorfield"><input type="color" id="fgColor" value="#111111" /><input type="text" id="fgHex" value="#111111" maxlength="7" spellcheck="false" /></div>
-          </div>
-          <div class="field"><label id="bgLabel"></label>
-            <div class="colorfield"><input type="color" id="bgColor" value="#ffffff" /><input type="text" id="bgHex" value="#ffffff" maxlength="7" spellcheck="false" /></div>
-          </div>
-        </div>
-        <div class="field"><label id="shapeLabel"></label>
-          <select id="shape">
-            <option value="square"></option>
-            <option value="rounded"></option>
-            <option value="dots"></option>
-          </select>
-        </div>
-        <div class="field"><label id="marginLabel"></label>
-          <div class="sliderrow"><input type="range" id="margin" min="0" max="8" step="1" value="4" /><span class="val" id="marginVal">4</span></div>
-        </div>
-        <div class="field"><label id="eccLabel"></label>
-          <div class="sliderrow">
-            <select id="ecc">
-              <option value="L"></option>
-              <option value="M" selected></option>
-              <option value="Q"></option>
-              <option value="H"></option>
-            </select>
-          </div>
-        </div>
-        <div class="field"><label id="logoLabel"></label>
-          <div class="logo-actions">
-            <label class="filebtn" for="logoFile" id="logoPickLabel"></label>
-            <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
-            <img id="logoPreview" class="logo-preview" style="display:none" alt="" />
-            <div class="sliderrow" id="logoScaleRow" style="display:none; flex:1; min-width:150px">
-              <input type="range" id="logoScale" min="12" max="30" step="1" value="20" style="flex:1" /><span class="val" id="logoScaleVal">20%</span>
+          <div class="field"><label id="logoLabel"></label>
+            <div class="logo-actions">
+              <label class="filebtn" for="logoFile" id="logoPickLabel"></label>
+              <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" />
+              <img id="logoPreview" class="logo-preview" style="display:none" alt="" />
+              <div class="sliderrow" id="logoScaleRow" style="display:none; flex:1; min-width:150px">
+                <input type="range" id="logoScale" min="12" max="30" step="1" value="20" style="flex:1" /><span class="val" id="logoScaleVal">20%</span>
+              </div>
+              <button class="ghostbtn" id="logoClear" type="button" style="display:none"></button>
             </div>
-            <button class="ghostbtn" id="logoClear" type="button" style="display:none"></button>
+            <p class="hint" id="logoHint"></p>
           </div>
-          <p class="hint" id="logoHint"></p>
-        </div>
-        <label class="check"><input type="checkbox" id="transparent" /><span id="transparentLabel"></span></label>
-        <button class="ghostbtn" id="resetStyle" type="button"></button>
+
+          <div class="rowcolors">
+            <div class="field"><label id="fgLabel"></label>
+              <div class="colorfield"><input type="color" id="fgColor" value="#111111" /><input type="text" id="fgHex" value="#111111" maxlength="7" spellcheck="false" /></div>
+            </div>
+            <div class="field"><label id="bgLabel"></label>
+              <div class="colorfield"><input type="color" id="bgColor" value="#ffffff" /><input type="text" id="bgHex" value="#ffffff" maxlength="7" spellcheck="false" /></div>
+            </div>
+            <label class="check transcheck"><input type="checkbox" id="transparent" /><span id="transparentLabel"></span></label>
+          </div>
+
+          <div class="row2col">
+            <div class="field"><label id="shapeLabel"></label>
+              <div class="shapeseg" role="radiogroup">
+                <button type="button" class="shapeopt" data-shape="square" aria-pressed="true">
+                  <svg viewBox="0 0 18 18" width="17" height="17" fill="currentColor" aria-hidden="true"><rect x="2.5" y="2.5" width="5.6" height="5.6" rx="0.7"/><rect x="9.9" y="2.5" width="5.6" height="5.6" rx="0.7"/><rect x="2.5" y="9.9" width="5.6" height="5.6" rx="0.7"/><rect x="9.9" y="9.9" width="5.6" height="5.6" rx="0.7"/></svg>
+                </button>
+                <button type="button" class="shapeopt" data-shape="rounded" aria-pressed="false">
+                  <svg viewBox="0 0 18 18" width="17" height="17" fill="currentColor" aria-hidden="true"><rect x="2.5" y="2.5" width="5.6" height="5.6" rx="2.2"/><rect x="9.9" y="2.5" width="5.6" height="5.6" rx="2.2"/><rect x="2.5" y="9.9" width="5.6" height="5.6" rx="2.2"/><rect x="9.9" y="9.9" width="5.6" height="5.6" rx="2.2"/></svg>
+                </button>
+                <button type="button" class="shapeopt" data-shape="dots" aria-pressed="false">
+                  <svg viewBox="0 0 18 18" width="17" height="17" fill="currentColor" aria-hidden="true"><circle cx="5.3" cy="5.3" r="2.9"/><circle cx="12.7" cy="5.3" r="2.9"/><circle cx="5.3" cy="12.7" r="2.9"/><circle cx="12.7" cy="12.7" r="2.9"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="field"><label id="eccLabel"></label>
+              <select id="ecc">
+                <option value="L"></option>
+                <option value="M" selected></option>
+                <option value="Q"></option>
+                <option value="H"></option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field"><label id="marginLabel"></label>
+            <div class="sliderrow"><input type="range" id="margin" min="0" max="8" step="1" value="4" /><span class="val" id="marginVal">4</span></div>
+          </div>
         </div>
       </details>
 
@@ -1198,7 +1216,7 @@ var qrcodegen;
           charsBytes: (c, b) => `${c} chars · ${b} bytes`,
           wifi: { ssid: "Network name (SSID)", pass: "Password", enc: "Security", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "None (open)", hidden: "Hidden network" },
           vcard: { name: "Name *", phone: "Phone", email: "Email", url: "Website", org: "Company", title: "Job title", note: "Note" },
-          style: { fg: "Foreground", bg: "Background", shape: "Module shape", square: "Square", rounded: "Rounded", dots: "Dots", margin: "Quiet zone", ecc: "Error correction", logo: "Center logo", pick: "Choose image…", clear: "Remove", hint: "A logo needs stronger error correction — ECC H is used automatically when a logo is set.", transparent: "Transparent background", reset: "Reset style", eccL: "L — smallest", eccM: "M — recommended", eccQ: "Q", eccH: "H — strongest" },
+          style: { fg: "Foreground", bg: "Background", shape: "Module shape", square: "Square", rounded: "Rounded", dots: "Dots", margin: "Quiet zone", ecc: "Error correction", logo: "Center logo", pick: "Choose image…", clear: "Remove", hint: "A logo needs stronger error correction — ECC H is used automatically when a logo is set.", transparent: "Transparent background", reset: "Reset style", eccL: "L — smallest", eccM: "M — recommended", eccQ: "Q", eccH: "H — strongest", logoClearTitle: "Remove logo", logoClearBody: "The centered logo will be removed from the QR code.", logoClearConfirm: "Remove" },
           actions: { save: "Save PNG", copyImg: "Copy Image", copyText: "Copy Content" },
           empty: "Your QR code will appear here.<br>Fill in any tab above.",
           history: { label: "History", empty: "No history yet", clear: "Clear", saved: "History storage is unavailable in this host", modalTitle: "Clear history", modalBody: "All {type} entries will be removed from history. This cannot be undone.", confirm: "Clear", cancel: "Cancel" },
@@ -1219,7 +1237,7 @@ var qrcodegen;
           charsBytes: (c, b) => `${c} 字符 · ${b} 字节`,
           wifi: { ssid: "网络名称（SSID）", pass: "密码", enc: "加密方式", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "无加密（开放网络）", hidden: "隐藏网络" },
           vcard: { name: "姓名 *", phone: "手机", email: "邮箱", url: "网址", org: "公司", title: "职位", note: "备注" },
-          style: { fg: "前景色", bg: "背景色", shape: "码点形状", square: "方块", rounded: "圆角", dots: "圆点", margin: "留白边距", ecc: "纠错级别", logo: "中心 Logo", pick: "选择图片…", clear: "移除", hint: "添加 Logo 会降低扫码容错，设置 Logo 后将自动改用 H 级纠错。", transparent: "透明背景", reset: "恢复默认样式", eccL: "L — 体积最小", eccM: "M — 推荐", eccQ: "Q", eccH: "H — 容错最强" },
+          style: { fg: "前景色", bg: "背景色", shape: "码点形状", square: "方块", rounded: "圆角", dots: "圆点", margin: "留白边距", ecc: "纠错级别", logo: "中心 Logo", pick: "选择图片…", clear: "移除", hint: "添加 Logo 会降低扫码容错，设置 Logo 后将自动改用 H 级纠错。", transparent: "透明背景", reset: "恢复默认样式", eccL: "L — 体积最小", eccM: "M — 推荐", eccQ: "Q", eccH: "H — 容错最强", logoClearTitle: "移除中心 Logo", logoClearBody: "将从二维码中移除已设置的中心 Logo。", logoClearConfirm: "确认移除" },
           actions: { save: "保存 PNG", copyImg: "复制图片", copyText: "复制内容" },
           empty: "二维码会显示在这里<br>在上方任意页签填写内容即可",
           history: { label: "历史记录", empty: "暂无历史记录", clear: "清空", saved: "当前宿主不支持保存历史", modalTitle: "清空历史记录", modalBody: "将删除全部「{type}」类型的历史记录，此操作不可撤销。", confirm: "确认清空", cancel: "取消" },
@@ -1259,9 +1277,11 @@ var qrcodegen;
         $("fgLabel").textContent = text.style.fg;
         $("bgLabel").textContent = text.style.bg;
         $("shapeLabel").textContent = text.style.shape;
-        $("shape").options[0].textContent = text.style.square;
-        $("shape").options[1].textContent = text.style.rounded;
-        $("shape").options[2].textContent = text.style.dots;
+        document.querySelectorAll(".shapeopt").forEach((b) => {
+          const label = text.style[b.dataset.shape];
+          b.title = label;
+          b.setAttribute("aria-label", label);
+        });
         $("marginLabel").textContent = text.style.margin;
         $("eccLabel").textContent = text.style.ecc;
         $("ecc").options[0].textContent = text.style.eccL;
@@ -1279,9 +1299,6 @@ var qrcodegen;
         btnCopyText.textContent = text.actions.copyText;
         $("historyLabel").textContent = text.history.label;
         $("clearHistory").textContent = text.history.clear;
-        $("modalTitle").textContent = text.history.modalTitle;
-        $("modalConfirm").textContent = text.history.confirm;
-        $("modalCancel").textContent = text.history.cancel;
         renderHistory();
       }
 
@@ -1677,21 +1694,43 @@ var qrcodegen;
       const unescVcard = (s) => String(s).replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
 
       const modalMask = $("modalMask");
+      let modalOnConfirm = null;
+      function openConfirm(opts) {
+        $("modalTitle").textContent = opts.title;
+        $("modalBody").textContent = opts.body;
+        $("modalConfirm").textContent = opts.confirm;
+        $("modalCancel").textContent = opts.cancel;
+        modalOnConfirm = opts.onConfirm || null;
+        modalMask.classList.add("show");
+      }
+      function closeConfirm() {
+        modalMask.classList.remove("show");
+        modalOnConfirm = null;
+      }
+      $("modalCancel").addEventListener("click", closeConfirm);
+      modalMask.addEventListener("click", (ev) => { if (ev.target === modalMask) closeConfirm(); });
+      $("modalConfirm").addEventListener("click", () => {
+        const fn = modalOnConfirm;
+        closeConfirm();
+        if (fn) fn();
+      });
+
       $("clearHistory").addEventListener("click", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
         if (!historyEntries.some((h) => h.kind === activeTab)) return;
-        $("modalBody").textContent = text.history.modalBody.replace("{type}", text.badges[activeTab]);
-        modalMask.classList.add("show");
-      });
-      $("modalCancel").addEventListener("click", () => modalMask.classList.remove("show"));
-      modalMask.addEventListener("click", (ev) => { if (ev.target === modalMask) modalMask.classList.remove("show"); });
-      $("modalConfirm").addEventListener("click", () => {
-        modalMask.classList.remove("show");
-        historyEntries = historyEntries.filter((h) => h.kind !== activeTab);
-        persistHistory();
-        renderHistory();
-        showToast(text.toast.cleared);
+        openConfirm({
+          title: text.history.modalTitle,
+          body: text.history.modalBody.replace("{type}", text.badges[activeTab]),
+          confirm: text.history.confirm,
+          cancel: text.history.cancel,
+          onConfirm: () => {
+            historyEntries = historyEntries.filter((h) => h.kind !== activeTab);
+            persistHistory();
+            renderHistory();
+            showToast(text.toast.cleared);
+          },
+        });
       });
 
       // History entries are recorded only through an explicit "Save" click.
@@ -1726,7 +1765,7 @@ var qrcodegen;
       function syncStyleInputs() {
         $("fgColor").value = style.fg; $("fgHex").value = style.fg;
         $("bgColor").value = style.bg; $("bgHex").value = style.bg;
-        $("shape").value = style.shape;
+        document.querySelectorAll(".shapeopt").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.shape === style.shape)));
         $("margin").value = style.margin; $("marginVal").textContent = style.margin;
         $("ecc").value = style.ecc;
         $("transparent").checked = style.transparentBg === true;
@@ -1761,7 +1800,12 @@ var qrcodegen;
       }
       bindHexPair("fgColor", "fgHex", "fg");
       bindHexPair("bgColor", "bgHex", "bg");
-      $("shape").addEventListener("change", () => { style.shape = $("shape").value; scheduleGenerate(); });
+      document.querySelectorAll(".shapeopt").forEach((b) => b.addEventListener("click", () => {
+        if (style.shape === b.dataset.shape) return;
+        style.shape = b.dataset.shape;
+        document.querySelectorAll(".shapeopt").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.shape === style.shape)));
+        scheduleGenerate();
+      }));
       $("margin").addEventListener("input", () => {
         style.margin = Number($("margin").value);
         $("marginVal").textContent = style.margin;
@@ -1775,10 +1819,19 @@ var qrcodegen;
         scheduleGenerate();
       });
       $("logoClear").addEventListener("click", () => {
-        style.logo = null;
-        $("logoFile").value = "";
-        syncStyleInputs();
-        scheduleGenerate();
+        if (!style.logo) return;
+        openConfirm({
+          title: text.style.logoClearTitle,
+          body: text.style.logoClearBody,
+          confirm: text.style.logoClearConfirm,
+          cancel: text.history.cancel,
+          onConfirm: () => {
+            style.logo = null;
+            $("logoFile").value = "";
+            syncStyleInputs();
+            scheduleGenerate();
+          },
+        });
       });
       $("logoFile").addEventListener("change", () => {
         const file = $("logoFile").files && $("logoFile").files[0];
@@ -1803,7 +1856,9 @@ var qrcodegen;
         };
         reader.readAsDataURL(file);
       });
-      $("resetStyle").addEventListener("click", () => {
+      $("resetStyle").addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
         Object.assign(style, DEFAULT_STYLE);
         syncStyleInputs();
         scheduleGenerate();
