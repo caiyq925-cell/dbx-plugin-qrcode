@@ -95,6 +95,15 @@
       button.act:disabled { opacity: .4; cursor: not-allowed; }
       .secondary { background: transparent !important; color: inherit !important; border: 1px solid var(--border) !important; }
 
+      details.styleset { margin-top: 2px; border: 1px solid var(--border); border-radius: var(--radius); }
+      details.styleset summary {
+        display: flex; align-items: center; padding: 10px 14px; cursor: pointer; font-size: 13px;
+        font-weight: 600; list-style: none; user-select: none; opacity: .85;
+      }
+      details.styleset summary::-webkit-details-marker { display: none; }
+      details.styleset summary::after { content: "▸"; margin-left: auto; opacity: .5; font-size: 11px; transition: transform .15s ease; }
+      details.styleset[open] summary::after { transform: rotate(90deg); }
+      details.styleset .stylebody { padding: 2px 14px 12px; }
       details.history { margin-top: 20px; border: 1px solid var(--border); border-radius: var(--radius); }
       details.history summary {
         display: flex; align-items: center; padding: 11px 14px; cursor: pointer; font-size: 13px;
@@ -124,6 +133,27 @@
       .hitem .del:hover { opacity: 1; background: color-mix(in srgb, #e5484d 18%, transparent); color: #e5484d; }
       .hempty { text-align: center; font-size: 12px; opacity: .5; padding: 14px 0 10px; }
 
+      #modalMask {
+        position: fixed; inset: 0; display: none; place-items: center; z-index: 50;
+        background: rgba(0,0,0,.42);
+      }
+      #modalMask.show { display: grid; }
+      #modal {
+        width: min(340px, 88vw); padding: 20px; border-radius: 14px;
+        background: Canvas; color: CanvasText; box-shadow: 0 24px 70px rgba(0,0,0,.35);
+      }
+      #modalTitle { margin: 0 0 8px; font-size: 15px; font-weight: 700; }
+      #modalBody { margin: 0 0 16px; font-size: 13px; line-height: 1.6; opacity: .75; }
+      .modal-actions { display: flex; gap: 10px; }
+      .modal-actions button {
+        flex: 1; border: 0; border-radius: 10px; padding: 10px 14px; font: inherit;
+        font-size: 13px; font-weight: 600; cursor: pointer;
+      }
+      #modalCancel {
+        background: transparent; color: inherit;
+        border: 1px solid color-mix(in srgb, CanvasText 22%, transparent);
+      }
+      #modalConfirm { background: #e5484d; color: #fff; }
       #toast {
         position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(8px);
         padding: 9px 16px; border-radius: 10px; font-size: 12.5px; max-width: 86vw;
@@ -184,7 +214,6 @@
         <button class="tab" role="tab" data-tab="text" aria-selected="true" type="button"></button>
         <button class="tab" role="tab" data-tab="wifi" aria-selected="false" type="button"></button>
         <button class="tab" role="tab" data-tab="vcard" aria-selected="false" type="button"></button>
-        <button class="tab" role="tab" data-tab="style" aria-selected="false" type="button"></button>
       </div>
 
       <div class="panel active" data-panel="text">
@@ -220,7 +249,9 @@
         <div class="field"><label id="vcNoteLabel"></label><input type="text" id="vcNote" maxlength="128" /></div>
       </div>
 
-      <div class="panel" data-panel="style">
+      <details class="styleset" id="styleBox">
+        <summary id="styleSummary"></summary>
+        <div class="stylebody">
         <div class="grid2">
           <div class="field"><label id="fgLabel"></label>
             <div class="colorfield"><input type="color" id="fgColor" value="#111111" /><input type="text" id="fgHex" value="#111111" maxlength="7" spellcheck="false" /></div>
@@ -263,7 +294,8 @@
         </div>
         <label class="check"><input type="checkbox" id="transparent" /><span id="transparentLabel"></span></label>
         <button class="ghostbtn" id="resetStyle" type="button"></button>
-      </div>
+        </div>
+      </details>
 
       <section class="preview solid" id="preview">
         <canvas id="canvas" width="480" height="480"></canvas>
@@ -291,6 +323,16 @@
         <div id="historyList"></div>
       </details>
     </main>
+    <div id="modalMask">
+      <div id="modal" role="dialog" aria-modal="true">
+        <p id="modalTitle"></p>
+        <p id="modalBody"></p>
+        <div class="modal-actions">
+          <button id="modalCancel" type="button"></button>
+          <button id="modalConfirm" type="button"></button>
+        </div>
+      </div>
+    </div>
     <div id="toast"></div>
     <script>
 /*
@@ -1142,7 +1184,7 @@ var qrcodegen;
       const DEFAULT_STYLE = { fg: "#111111", bg: "#ffffff", shape: "square", margin: 4, ecc: "M", logo: null, logoScale: 0.2, transparentBg: false };
       const style = { ...DEFAULT_STYLE };
       let activeTab = "text";
-      let hasQr = false, payload = "", debounceTimer = 0, historyTimer = 0;
+      let hasQr = false, payload = "", debounceTimer = 0;
       let historyEntries = [];
 
       // ---------- i18n ----------
@@ -1150,7 +1192,8 @@ var qrcodegen;
         en: {
           title: "QR Code Generator",
           subtitle: "Generate QR codes from text, Wi-Fi or a contact card, style them with colors and a logo, then export or copy.",
-          tabs: { text: "Text / URL", wifi: "Wi-Fi", vcard: "Contact", style: "Style" },
+          tabs: { text: "Text / URL", wifi: "Wi-Fi", vcard: "Contact" },
+          styleLabel: "Style settings",
           textPlaceholder: "https://example.com or any text…",
           charsBytes: (c, b) => `${c} chars · ${b} bytes`,
           wifi: { ssid: "Network name (SSID)", pass: "Password", enc: "Security", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "None (open)", hidden: "Hidden network" },
@@ -1158,7 +1201,7 @@ var qrcodegen;
           style: { fg: "Foreground", bg: "Background", shape: "Module shape", square: "Square", rounded: "Rounded", dots: "Dots", margin: "Quiet zone", ecc: "Error correction", logo: "Center logo", pick: "Choose image…", clear: "Remove", hint: "A logo needs stronger error correction — ECC H is used automatically when a logo is set.", transparent: "Transparent background", reset: "Reset style", eccL: "L — smallest", eccM: "M — recommended", eccQ: "Q", eccH: "H — strongest" },
           actions: { save: "Save PNG", copyImg: "Copy Image", copyText: "Copy Content" },
           empty: "Your QR code will appear here.<br>Fill in any tab above.",
-          history: { label: "History", empty: "No history yet", clear: "Clear", saved: "History storage is unavailable in this host" },
+          history: { label: "History", empty: "No history yet", clear: "Clear", saved: "History storage is unavailable in this host", modalTitle: "Clear history", modalBody: "All {type} entries will be removed from history. This cannot be undone.", confirm: "Clear", cancel: "Cancel" },
           toast: {
             saved: "PNG saved", savedFile: "PNG saved", copyOk: "Image copied to clipboard",
             copyFallback: "Image copy is not supported here — the QR content was copied instead",
@@ -1170,7 +1213,8 @@ var qrcodegen;
         zh: {
           title: "二维码工具",
           subtitle: "文本、Wi-Fi、名片一键生成二维码；支持自定义颜色、形状与中心 Logo，导出 PNG 或复制使用。",
-          tabs: { text: "文本 / 网址", wifi: "WiFi", vcard: "名片", style: "样式" },
+          tabs: { text: "文本 / 网址", wifi: "WiFi", vcard: "名片" },
+          styleLabel: "样式设置",
           textPlaceholder: "https://example.com 或任意文字…",
           charsBytes: (c, b) => `${c} 字符 · ${b} 字节`,
           wifi: { ssid: "网络名称（SSID）", pass: "密码", enc: "加密方式", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "无加密（开放网络）", hidden: "隐藏网络" },
@@ -1178,7 +1222,7 @@ var qrcodegen;
           style: { fg: "前景色", bg: "背景色", shape: "码点形状", square: "方块", rounded: "圆角", dots: "圆点", margin: "留白边距", ecc: "纠错级别", logo: "中心 Logo", pick: "选择图片…", clear: "移除", hint: "添加 Logo 会降低扫码容错，设置 Logo 后将自动改用 H 级纠错。", transparent: "透明背景", reset: "恢复默认样式", eccL: "L — 体积最小", eccM: "M — 推荐", eccQ: "Q", eccH: "H — 容错最强" },
           actions: { save: "保存 PNG", copyImg: "复制图片", copyText: "复制内容" },
           empty: "二维码会显示在这里<br>在上方任意页签填写内容即可",
-          history: { label: "历史记录", empty: "暂无历史记录", clear: "清空", saved: "当前宿主不支持保存历史" },
+          history: { label: "历史记录", empty: "暂无历史记录", clear: "清空", saved: "当前宿主不支持保存历史", modalTitle: "清空历史记录", modalBody: "将删除全部「{type}」类型的历史记录，此操作不可撤销。", confirm: "确认清空", cancel: "取消" },
           toast: {
             saved: "PNG 已保存", savedFile: "PNG 已保存", copyOk: "图片已复制到剪贴板",
             copyFallback: "当前环境不支持复制图片，已复制二维码内容",
@@ -1196,6 +1240,7 @@ var qrcodegen;
         $("title").textContent = text.title;
         $("subtitle").textContent = text.subtitle;
         document.querySelectorAll(".tab").forEach((t) => { t.textContent = text.tabs[t.dataset.tab]; });
+        $("styleSummary").textContent = text.styleLabel;
         $("textContent").placeholder = text.textPlaceholder;
         $("wifiSsidLabel").textContent = text.wifi.ssid;
         $("wifiPassLabel").textContent = text.wifi.pass;
@@ -1234,6 +1279,9 @@ var qrcodegen;
         btnCopyText.textContent = text.actions.copyText;
         $("historyLabel").textContent = text.history.label;
         $("clearHistory").textContent = text.history.clear;
+        $("modalTitle").textContent = text.history.modalTitle;
+        $("modalConfirm").textContent = text.history.confirm;
+        $("modalCancel").textContent = text.history.cancel;
         renderHistory();
       }
 
@@ -1453,6 +1501,7 @@ var qrcodegen;
             const b64 = c.toDataURL("image/png").split(",")[1];
             await window.dbxPlugin.saveFile({ fileName, contentType: "image/png" }, b64);
             showToast(text.toast.savedFile);
+            recordHistoryNow();
           } catch (e) {
             if (e && e.message === "cancelled") return;
             showToast(text.toast.failed);
@@ -1463,6 +1512,7 @@ var qrcodegen;
           a.download = fileName;
           a.click();
           showToast(text.toast.saved);
+          recordHistoryNow();
         }
       });
 
@@ -1545,17 +1595,19 @@ var qrcodegen;
         return `${d.getMonth() + 1}-${d.getDate()} ${hm}`;
       }
       function renderHistory() {
-        $("historyCount").textContent = historyEntries.length ? `(${historyEntries.length})` : "";
+        const box = $("historyBox");
+        const kindEntries = historyEntries.filter((h) => h.kind === activeTab);
+        $("historyCount").textContent = kindEntries.length ? `(${kindEntries.length})` : "";
         const list = $("historyList");
         list.textContent = "";
-        if (!historyEntries.length) {
+        if (!kindEntries.length) {
           const p = document.createElement("p");
           p.className = "hempty";
           p.textContent = text.history.empty;
           list.appendChild(p);
           return;
         }
-        for (const h of historyEntries) {
+        for (const h of kindEntries) {
           const row = document.createElement("div");
           row.className = "hitem";
           const badge = document.createElement("span");
@@ -1624,41 +1676,40 @@ var qrcodegen;
       const unescWifi = (s) => String(s).replace(/\\([\\;,":])/g, "$1");
       const unescVcard = (s) => String(s).replace(/\\n/g, "\n").replace(/\\,/g, ",").replace(/\\;/g, ";").replace(/\\\\/g, "\\");
 
+      const modalMask = $("modalMask");
       $("clearHistory").addEventListener("click", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        if (historyEntries.length && !clearHistory._armed) {
-          clearHistory._armed = true;
-          $("clearHistory").textContent = "✓";
-          setTimeout(() => { clearHistory._armed = false; $("clearHistory").textContent = text.history.clear; }, 2200);
-          return;
-        }
-        clearHistory._armed = false;
-        $("clearHistory").textContent = text.history.clear;
-        historyEntries = [];
+        if (!historyEntries.some((h) => h.kind === activeTab)) return;
+        $("modalBody").textContent = text.history.modalBody.replace("{type}", text.badges[activeTab]);
+        modalMask.classList.add("show");
+      });
+      $("modalCancel").addEventListener("click", () => modalMask.classList.remove("show"));
+      modalMask.addEventListener("click", (ev) => { if (ev.target === modalMask) modalMask.classList.remove("show"); });
+      $("modalConfirm").addEventListener("click", () => {
+        modalMask.classList.remove("show");
+        historyEntries = historyEntries.filter((h) => h.kind !== activeTab);
         persistHistory();
         renderHistory();
         showToast(text.toast.cleared);
       });
 
-      // record history only when the payload settles (debounced along with generate)
-      let lastRecorded = "";
-      function maybeRecordHistory() {
-        if (!hasQr || !payload || payload === lastRecorded) return;
-        lastRecorded = payload;
-        let kind = "text", title = payload;
-        if (payload.startsWith("WIFI:")) {
-          kind = "wifi";
-          const m = payload.match(/;S:((?:[^;\\]|\\.)*)/);
-          title = m ? unescWifi(m[1]) : "WiFi";
-        } else if (payload.startsWith("BEGIN:VCARD")) {
-          kind = "vcard";
-          const m = payload.match(/^FN:(.*)$/m);
-          title = m ? unescVcard(m[1]) : "vCard";
-        } else {
-          title = payload.length > 40 ? payload.slice(0, 40) + "…" : payload;
+      // History entries are recorded only through an explicit "Save" click.
+      function historyMetaFor(content) {
+        if (content.startsWith("WIFI:")) {
+          const m = content.match(/;S:((?:[^;\\]|\\.)*)/);
+          return { kind: "wifi", title: m ? unescWifi(m[1]) : "WiFi" };
         }
-        pushHistory(kind, title, payload);
+        if (content.startsWith("BEGIN:VCARD")) {
+          const m = content.match(/^FN:(.*)$/m);
+          return { kind: "vcard", title: m ? unescVcard(m[1]) : "vCard" };
+        }
+        return { kind: "text", title: content.length > 40 ? content.slice(0, 40) + "…" : content };
+      }
+      function recordHistoryNow() {
+        if (!hasQr || !payload) return;
+        const meta = historyMetaFor(payload);
+        pushHistory(meta.kind, meta.title, payload);
       }
 
       // ---------- tabs ----------
@@ -1666,7 +1717,7 @@ var qrcodegen;
         activeTab = name;
         document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
         document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === name));
-        lastRecorded = "";
+        renderHistory();
         scheduleGenerate(0);
       }
       document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
@@ -1762,11 +1813,7 @@ var qrcodegen;
       // ---------- inputs ----------
       function scheduleGenerate(delay = 300) {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
-          generate();
-          clearTimeout(historyTimer);
-          historyTimer = setTimeout(maybeRecordHistory, 900);
-        }, delay);
+        debounceTimer = setTimeout(generate, delay);
       }
       $("textContent").addEventListener("input", () => scheduleGenerate());
       for (const id of ["wifiSsid", "wifiPass", "wifiEnc", "wifiHidden", "vcName", "vcPhone", "vcEmail", "vcUrl", "vcOrg", "vcTitle", "vcNote"]) {
