@@ -1,0 +1,44 @@
+{
+  "$schema": "https://raw.githubusercontent.com/t8y2/dbx/plugin-sdk-v1/plugins/manifest.schema.json",
+  "manifest_version": 1,
+  "id": "com.caiyq925.qrcode",
+  "name": "QR Code Generator",
+  "version": "0.1.0",
+  "publisher": "caiyq925",
+  "description": "Generate QR codes from text, Wi-Fi networks or contact cards, with custom colors, module shapes and a centered logo. Export PNG, copy to clipboard, and keep a history of recent codes.",
+  "icon": "assets/plugin.svg",
+  "engines": {
+    "dbx": ">=0.5.68",
+    "host_api": "1"
+  },
+  "permissions": [
+    "host.storage"
+  ],
+  "entrypoints": {
+    "ui": {
+      "root": "ui",
+      "entry": "ui/index.html"
+    }
+  },
+  "contributions": [
+    {
+      "type": "workbench",
+      "id": "com.caiyq925.qrcode.workbench",
+      "label": "QR Code",
+      "description": "Generate QR codes from text, Wi-Fi or contacts, with custom styling, PNG export and history.",
+      "icon": "assets/plugin.svg"
+    }
+  ],
+  "localizations": {
+    "zh-CN": {
+      "name": "二维码工具",
+      "description": "文本、Wi-Fi、名片一键生成二维码：自定义颜色、码点形状与中心 Logo，导出 PNG、复制到剪贴板，并保留历史记录。",
+      "contributions": {
+        "com.caiyq925.qrcode.workbench": {
+          "label": "二维码工具",
+          "description": "文本、Wi-Fi、名片生成二维码，支持自定义样式、导出 PNG 与历史记录。"
+        }
+      }
+    }
+  }
+}
