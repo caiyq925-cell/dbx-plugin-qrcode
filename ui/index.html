@@ -1267,6 +1267,9 @@ var qrcodegen;
           styleLabel: "Style settings",
           textPlaceholder: "https://example.com or any text…",
           charsBytes: (c, b) => `${c} chars · ${b} bytes`,
+          countWarn: " · near capacity limit",
+          chips: { text: "URL example", wifi: "Wi-Fi example", vcard: "Contact example" },
+          samples: { url: "https://example.com", wifi: { ssid: "Home-WiFi", pass: "password1234" }, vcard: { name: "Alice", phone: "+1 555 010 1234" } },
           wifi: { ssid: "Network name (SSID)", pass: "Password", enc: "Security", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "None (open)", hidden: "Hidden network" },
           vcard: { name: "Name *", phone: "Phone", email: "Email", url: "Website", org: "Company", title: "Job title", note: "Note", more: "More fields" },
           style: { fg: "Foreground", bg: "Background", shape: "Module shape", square: "Square", rounded: "Rounded", dots: "Dots", margin: "Quiet zone", ecc: "Error correction", logo: "Center logo", pick: "Choose image…", clear: "Remove", hint: "A logo needs stronger error correction — ECC H is used automatically when a logo is set.", transparent: "Transparent background", reset: "Reset style", eccL: "L — smallest", eccM: "M — recommended", eccQ: "Q", eccH: "H — strongest", logoClearTitle: "Remove logo", logoClearBody: "The centered logo will be removed from the QR code.", logoClearConfirm: "Remove" },
@@ -1276,7 +1279,10 @@ var qrcodegen;
           toast: {
             saved: "PNG saved", savedFile: "PNG saved", copyOk: "Image copied to clipboard",
             copyFallback: "Image copy is not supported here — the QR content was copied instead",
-            contentCopied: "Content copied", failed: "Operation failed", tooLong: (b) => `Content is too long (${b} bytes) — shorten it or lower the ECC level.`,
+            contentCopied: "Content copied", failed: "Operation failed",
+            tooLong: (b) => `Content is too long (${b} bytes) — lower the error correction level or shorten it.`,
+            tooLongL: (b) => `Content is too long (${b} bytes) — shorten the content to fit.`,
+            downgrade: "Retry with ECC L",
             logoFail: "Could not load this image", styleReset: "Style reset", cleared: "History cleared", missing: (f) => `Please fill in ${f}`,
           },
           badges: { text: "Text", wifi: "Wi-Fi", vcard: "Contact" },
@@ -1288,6 +1294,9 @@ var qrcodegen;
           styleLabel: "样式设置",
           textPlaceholder: "https://example.com 或任意文字…",
           charsBytes: (c, b) => `${c} 字符 · ${b} 字节`,
+          countWarn: " · 接近容量上限",
+          chips: { text: "网址示例", wifi: "WiFi 示例", vcard: "名片示例" },
+          samples: { url: "https://example.com", wifi: { ssid: "Home-WiFi", pass: "password1234" }, vcard: { name: "张三", phone: "13800138000" } },
           wifi: { ssid: "网络名称（SSID）", pass: "密码", enc: "加密方式", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "无加密（开放网络）", hidden: "隐藏网络" },
           vcard: { name: "姓名 *", phone: "手机", email: "邮箱", url: "网址", org: "公司", title: "职位", note: "备注", more: "更多信息" },
           style: { fg: "前景色", bg: "背景色", shape: "码点形状", square: "方块", rounded: "圆角", dots: "圆点", margin: "留白边距", ecc: "纠错级别", logo: "中心 Logo", pick: "选择图片…", clear: "移除", hint: "添加 Logo 会降低扫码容错，设置 Logo 后将自动改用 H 级纠错。", transparent: "透明背景", reset: "恢复默认样式", eccL: "L — 体积最小", eccM: "M — 推荐", eccQ: "Q", eccH: "H — 容错最强", logoClearTitle: "移除中心 Logo", logoClearBody: "将从二维码中移除已设置的中心 Logo。", logoClearConfirm: "确认移除" },
@@ -1297,7 +1306,10 @@ var qrcodegen;
           toast: {
             saved: "PNG 已保存", savedFile: "PNG 已保存", copyOk: "图片已复制到剪贴板",
             copyFallback: "当前环境不支持复制图片，已复制二维码内容",
-            contentCopied: "内容已复制", failed: "操作失败", tooLong: (b) => `内容太长（${b} 字节），超出二维码容量，请缩短内容或降低纠错级别。`,
+            contentCopied: "内容已复制", failed: "操作失败",
+            tooLong: (b) => `内容太长（${b} 字节），超出二维码容量，可降低纠错级别或缩短内容。`,
+            tooLongL: (b) => `内容太长（${b} 字节），超出二维码容量，请缩短内容。`,
+            downgrade: "改用 L 级纠错重试",
             logoFail: "图片加载失败", styleReset: "样式已恢复默认", cleared: "历史已清空", missing: (f) => `请先填写${f}`,
           },
           badges: { text: "文本", wifi: "WiFi", vcard: "名片" },
@@ -1354,6 +1366,8 @@ var qrcodegen;
         $("historyLabel").textContent = text.history.label;
         $("clearHistory").textContent = text.history.clear;
         renderHistory();
+        updateCounter();
+        if (emptyEl.style.display !== "none" && errorEl.style.display === "none") renderEmptyState();
       }
 
       function showToast(msg) {
@@ -1499,20 +1513,41 @@ var qrcodegen;
       }
 
       // ---------- generate ----------
+      // Theoretical byte-mode payload limit per ECC level, derived from the
+      // qrcodegen codeword tables at the largest version (40): the byte
+      // segment spends a 4-bit mode marker + 16-bit char count there.
+      function capacity(ecc) {
+        const ecl = qrcodegen.QrCode.Ecc[{ L: "LOW", M: "MEDIUM", Q: "QUARTILE", H: "HIGH" }[ecc]];
+        return Math.floor((qrcodegen.QrCode.getNumDataCodewords(40, ecl) * 8 - 20) / 8);
+      }
+      const CAPACITY_WARN_RATIO = 0.9;
+      // One counter under every tab's inputs, computed from the final
+      // (escaped / assembled) payload so Wi-Fi and vCard are covered too.
+      function updateCounter() {
+        const el = $(`${activeTab}Meta`);
+        if (!el) return;
+        const bytes = payload ? new TextEncoder().encode(payload).length : 0;
+        const chars = payload ? Array.from(payload).length : 0;
+        const ecc = style.logo ? "H" : style.ecc;
+        const near = bytes > 0 && bytes >= Math.ceil(capacity(ecc) * CAPACITY_WARN_RATIO);
+        el.textContent = text.charsBytes(chars, bytes) + (near ? text.countWarn : "");
+        el.classList.toggle("warn", near);
+      }
       function generate() {
         payload = buildPayload();
+        updateCounter();
         updateActionButtons();
-        if (activeTab === "text") {
-          const v = $("textContent").value;
-          $("textMeta").textContent = v ? text.charsBytes(v.length, new TextEncoder().encode(v).length) : text.charsBytes(0, 0);
-        }
         if (!payload) return showEmpty();
         const ecc = style.logo ? "H" : style.ecc;
         let qr;
         try {
           qr = qrcodegen.QrCode.encodeText(payload, qrcodegen.QrCode.Ecc[ecc === "L" ? "LOW" : ecc === "M" ? "MEDIUM" : ecc === "Q" ? "QUARTILE" : "HIGH"]);
         } catch (e) {
-          return showError(text.toast.tooLong(new TextEncoder().encode(payload).length));
+          const bytes = new TextEncoder().encode(payload).length;
+          return showError(
+            style.ecc === "L" ? text.toast.tooLongL(bytes) : text.toast.tooLong(bytes),
+            { downgrade: style.ecc !== "L" }
+          );
         }
         const c = renderQr(qr, 480, style);
         canvas.width = 480; canvas.height = 480;
@@ -1524,22 +1559,98 @@ var qrcodegen;
         hasQr = true;
         updateActionButtons();
       }
+      const EXAMPLE_CHIPS = ["text", "wifi", "vcard"];
+      const stripStar = (s) => String(s).replace(/\s*\*\s*$/, "");
+      // Name the first missing required field once the tab has partial input;
+      // a completely untouched tab keeps the generic empty state.
+      function missingFieldName(tab) {
+        if (tab === "wifi") {
+          if ($("wifiSsid").value.trim()) return stripStar(text.wifi.pass);
+          const partial = $("wifiPass").value || $("wifiHidden").checked;
+          return partial ? stripStar(text.wifi.ssid) : "";
+        }
+        if (tab === "vcard") {
+          if ($("vcName").value.trim()) return "";
+          const partial = ["vcPhone", "vcEmail", "vcUrl", "vcOrg", "vcTitle", "vcNote"].some((id) => $(id).value.trim());
+          return partial ? stripStar(text.vcard.name) : "";
+        }
+        return "";
+      }
+      function renderEmptyState() {
+        emptyEl.textContent = "";
+        const missing = missingFieldName(activeTab);
+        const msg = document.createElement("p");
+        msg.className = "empty-msg";
+        if (missing) msg.textContent = text.toast.missing(missing);
+        else msg.innerHTML = text.empty;
+        emptyEl.appendChild(msg);
+        if (missing) return;
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+        for (const tab of EXAMPLE_CHIPS) {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.className = "chip";
+          b.textContent = text.chips[tab];
+          b.addEventListener("click", () => applyExample(tab));
+          wrap.appendChild(b);
+        }
+        emptyEl.appendChild(wrap);
+      }
+      // Example chips only fill inputs and render — nothing is pushed to history.
+      function applyExample(tab) {
+        if (tab === "text") {
+          switchTab("text");
+          $("textContent").value = text.samples.url;
+        } else if (tab === "wifi") {
+          switchTab("wifi");
+          $("wifiSsid").value = text.samples.wifi.ssid;
+          $("wifiPass").value = text.samples.wifi.pass;
+          $("wifiEnc").value = "WPA";
+          $("wifiHidden").checked = false;
+        } else {
+          switchTab("vcard");
+          $("vcName").value = text.samples.vcard.name;
+          $("vcPhone").value = text.samples.vcard.phone;
+        }
+        scheduleGenerate(0);
+      }
       function showEmpty() {
         hasQr = false;
         canvas.style.display = "none";
         errorEl.style.display = "none";
         emptyEl.style.display = "";
+        renderEmptyState();
         previewEl.classList.add("solid");
         updateActionButtons();
       }
-      function showError(msg) {
+      function showError(msg, opts = {}) {
         hasQr = false;
         canvas.style.display = "none";
         emptyEl.style.display = "none";
         errorEl.style.display = "block";
-        errorEl.textContent = msg;
+        errorEl.textContent = "";
+        const line = document.createElement("p");
+        line.className = "empty-msg";
+        line.textContent = msg;
+        errorEl.appendChild(line);
+        // One-click recovery: drop to ECC L unless we are already there
+        // (or a logo forces H regardless), then the hint is to shorten.
+        if (opts.downgrade) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "ghostbtn errbtn";
+          btn.textContent = text.toast.downgrade;
+          btn.addEventListener("click", downgradeEcc);
+          errorEl.appendChild(btn);
+        }
         previewEl.classList.add("solid");
         updateActionButtons();
+      }
+      function downgradeEcc() {
+        style.ecc = "L";
+        syncStyleInputs();
+        scheduleGenerate(0);
       }
       function updateActionButtons() {
         btnSave.disabled = !hasQr;
