@@ -34,4 +34,4 @@
 - [x] 5.1 jsQR 解码回归：三种形状 × 透明 × Logo × SVG（光栅化后解码）矩阵全通过（12/12，jsQR + ZXing TRY_HARDER 兜底）
 - [ ] 5.2 宿主 + 独立浏览器双环境手工回归：URL 建议条（命中/忽略/不误伤）、低对比警示与恢复、预设保存/套用/删除/上限、SVG 保存、语义文件名、复制尺寸跟随（独立浏览器侧已自动化回归通过；宿主侧 host.storage/保存对话框/剪贴板走宿主 API，待用户人工确认）
 - [x] 5.3 预设持久化验证：重开插件列表恢复（伪 storage 往返模拟通过）；无存储环境入口隐藏 + 提示已验证（宿主真实重开并入 5.2 宿主侧确认）
-- [ ] 5.4 对照 specs 逐条验证；`dbx-plugin package .` 产出 candidate 并提交 dbx-store PR（specs 逐条已验证，含建议条不误伤 IP 场景为保守行为；已本地重新打包，按用户要求暂缓推送/PR，待用户验证后升 0.1.1 提交）
+- [x] 5.4 对照 specs 逐条验证；`dbx-plugin package .` 产出 candidate 并提交 dbx-store PR（已随 0.2.0 一并提交，candidate PR t8y2/dbx-store#491，待签名合并）

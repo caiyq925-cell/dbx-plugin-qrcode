@@ -27,4 +27,4 @@
 - [x] 4.1 `dbx-plugin dev --port 5190` 实测宿主面板宽度，确认 900px 断点是否需要下调；调整后提交
 - [ ] 4.2 宿主 + 独立浏览器双环境手工回归：保存 PNG（3 尺寸）、复制图片/内容降级、历史记录/恢复/清空、样式重置、明暗主题、中英文（独立浏览器侧已自动化回归通过；宿主侧保存/复制/历史走宿主 API，待用户在 DBX 宿主中人工确认）
 - [x] 4.3 对照 specs 逐条验证：双栏/sticky、主按钮独占一行、vCard 折叠态仍参与生成、计数三页签/警示/阈值、示例 chip、点名、降级按钮（H→L 仍超容的第二段提示）
-- [ ] 4.4 `dbx-plugin package .` 产出 candidate，提交 dbx-store candidate PR（已本地打包 `dist/com.caiyq925.qrcode-0.1.0-universal.dbxp`；按用户要求暂缓推送/PR，待用户本地验证后再提交。注意：线上已存在 v0.1.0 release，提交商店前需将 manifest 版本升至 0.1.1 并重新打包）
+- [x] 4.4 `dbx-plugin package .` 产出 candidate，提交 dbx-store candidate PR（已升 0.2.0 重新打包，Release v0.2.0 已发布；candidate PR t8y2/dbx-store#491 已提交，待维护者签名合并）

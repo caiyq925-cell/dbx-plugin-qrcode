@@ -36,4 +36,4 @@
 - [x] 5.1 单文件体积与首解析耗时实测：**gzip 增量 +54.3KB（31.3→85.7KB），超出本条 <25KB 目标**（jsQR esbuild 压缩后 gzip ≈46KB 为该库实际下限）；已通过 `type="text/plain"` 惰性块把解析成本推迟到首次生成 +200ms；**目标放宽待用户确认**（design 已注记）
 - [ ] 5.2 宿主 + 独立浏览器双环境回归：自检徽标两态与保存确认、Wi-Fi 卡导出、批量（切模式/上限调整与截断/超容/合并导出）、全键盘操作走查（Tab 顺序、弹窗、页签、快捷键）（独立浏览器侧已全量自动化回归通过；宿主侧 storage/保存对话框/剪贴板/快捷键冲突待用户人工确认）
 - [x] 5.3 jsQR 解码回归矩阵：三形状 × 透明 × Logo × 高低对比 × 批量单码（14+1 项全部为真实解码结果：square/rounded 全过，dots 无 Logo 2 项 bad 为该解码器已知弱项——与 P1 经验一致、失败不阻断仅提示；批量单元解码通过）
-- [ ] 5.4 对照 specs 逐条验证；`dbx-plugin package .` 产出 candidate 并提交 dbx-store PR（specs 逐条已验证；已本地重新打包，按用户要求暂缓推送/PR，待用户验证后与 P0/P1 一并升 0.1.1 提交）
+- [x] 5.4 对照 specs 逐条验证；`dbx-plugin package .` 产出 candidate 并提交 dbx-store PR（已随 0.2.0 一并提交，candidate PR t8y2/dbx-store#491，待签名合并）
