@@ -93,6 +93,25 @@
       .filebtn:hover { opacity: 1; border-color: var(--accent); }
 
       .meta { font-size: 11.5px; opacity: .55; margin: 4px 0 0; }
+      .dropzone {
+        margin-bottom: 10px; padding: 24px 14px; border: 1.5px dashed var(--border); border-radius: var(--radius);
+        text-align: center; cursor: pointer; color: inherit;
+      }
+      .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, Canvas); }
+      .dropzone:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .dropzone .dz-title { margin: 0; font-size: 13px; font-weight: 600; }
+      .dropzone .hint { margin: 5px 0 0; }
+      .dmsg { display: none; font-size: 12px; margin: 8px 0 0; line-height: 1.5; }
+      .dmsg.ok { color: #1a7f37; }
+      .dmsg.err { color: #e5484d; }
+      #decodeResult { margin-top: 12px; }
+      .dres-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+      .dres-head .badge { margin: 0; }
+      #decodeText {
+        margin: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius);
+        background: var(--field); font: inherit; font-size: 13px; line-height: 1.55;
+        white-space: pre-wrap; word-break: break-all; max-height: 180px; overflow: auto; user-select: text;
+      }
       .meta.warn { color: #d97706; opacity: 1; font-weight: 600; }
       .suggest {
         display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
@@ -310,6 +329,7 @@
         <button class="tab" role="tab" data-tab="text" aria-selected="true" type="button"></button>
         <button class="tab" role="tab" data-tab="wifi" aria-selected="false" type="button"></button>
         <button class="tab" role="tab" data-tab="vcard" aria-selected="false" type="button"></button>
+        <button class="tab" role="tab" data-tab="decode" aria-selected="false" type="button"></button>
       </div>
 
       <div class="panel active" data-panel="text">
@@ -367,6 +387,26 @@
           </div>
         </details>
         <p class="meta" id="vcardMeta"></p>
+      </div>
+
+      <div class="panel" data-panel="decode">
+        <div id="dropZone" class="dropzone" role="button" tabindex="0">
+          <p class="dz-title" id="dzTitle"></p>
+          <p class="hint" id="dzHint"></p>
+        </div>
+        <input type="file" id="decodeFile" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" />
+        <p class="dmsg" id="decodeMsg" style="display:none"></p>
+        <div id="decodeResult" style="display:none">
+          <div class="dres-head">
+            <span class="badge" id="decodeKind"></span>
+            <span class="meta" id="decodeInfo"></span>
+          </div>
+          <pre id="decodeText" tabindex="0"></pre>
+          <div class="logo-actions" style="margin-top:8px">
+            <button class="ghostbtn" id="decodeCopy" type="button"></button>
+            <button class="ghostbtn" id="decodeReuse" type="button"></button>
+          </div>
+        </div>
       </div>
 
       <aside class="colR">
@@ -1351,7 +1391,8 @@ var qrcodegen;
         en: {
           title: "QR Code Generator",
           subtitle: "Generate, style and export QR codes.",
-          tabs: { text: "Text / URL", wifi: "Wi-Fi", vcard: "Contact" },
+          tabs: { text: "Text / URL", wifi: "Wi-Fi", vcard: "Contact", decode: "Decode" },
+          decode: { dzTitle: "Click, drop or paste a QR image here", dzHint: "PNG / JPEG / WebP / GIF · screenshots via Ctrl+V", emptyMsg: "Drop or paste a QR image to decode it — the picture shows up here.", ok: "Recognized", fail: "No QR code found in this image — it may be blurry, cropped, or not a QR code.", unavailable: "The local decoder is unavailable in this host — the Decode tab is disabled.", copy: "Copy content", reuse: "Fill in & generate", kindUrl: "URL" },
           styleLabel: "Style settings",
           textPlaceholder: "https://example.com or any text…",
           urlHint: { msg: "This looks like a web address.", apply: "Use https://", dismiss: "Keep as text" },
@@ -1385,7 +1426,8 @@ var qrcodegen;
         zh: {
           title: "二维码工具",
           subtitle: "生成、美化并导出二维码。",
-          tabs: { text: "文本 / 网址", wifi: "WiFi", vcard: "名片" },
+          tabs: { text: "文本 / 网址", wifi: "WiFi", vcard: "名片", decode: "解码" },
+          decode: { dzTitle: "点击选择、拖拽或粘贴二维码图片", dzHint: "支持 PNG / JPEG / WebP / GIF，截图后直接 Ctrl+V 粘贴", emptyMsg: "拖入或粘贴二维码图片即可识别，图片会显示在这里。", ok: "已识别", fail: "未在图中识别到二维码：图片可能模糊、不完整，或不是二维码。", unavailable: "当前宿主不可用本地解码器，解码页签已停用。", copy: "复制内容", reuse: "填入并生成", kindUrl: "网址" },
           styleLabel: "样式设置",
           textPlaceholder: "https://example.com 或任意文字…",
           urlHint: { msg: "这看起来像一个网址。", apply: "补全 https://", dismiss: "保持纯文本" },
@@ -1481,6 +1523,10 @@ var qrcodegen;
         $("batchLimitLabel").textContent = text.batch.limit;
         $("batchExport").textContent = text.batch.export;
         $("wifiPrivacy").textContent = text.wifi.privacy;
+        $("dzTitle").textContent = text.decode.dzTitle;
+        $("dzHint").textContent = text.decode.dzHint;
+        $("decodeCopy").textContent = text.decode.copy;
+        $("decodeReuse").textContent = text.decode.reuse;
         $("textContent").placeholder = batchMode ? text.batch.placeholder : text.textPlaceholder;
         document.querySelectorAll(".tab").forEach((t) => { t.tabIndex = t.getAttribute("aria-selected") === "true" ? 0 : -1; });
         $("historyLabel").textContent = text.history.label;
@@ -1953,6 +1999,7 @@ var qrcodegen;
 
       function generate() {
         if (batchMode) return generateBatch();
+        if (activeTab === "decode") return generateDecode();
         payload = buildPayload();
         updateCounter();
         updateUrlHint();
@@ -2000,8 +2047,14 @@ var qrcodegen;
       }
       function renderEmptyState() {
         emptyEl.textContent = "";
-        const missing = missingFieldName(activeTab);
         const msg = document.createElement("p");
+        if (activeTab === "decode") {
+          msg.className = "empty-msg";
+          msg.textContent = text.decode.emptyMsg;
+          emptyEl.appendChild(msg);
+          return; // no example chips — they belong to the generator tabs
+        }
+        const missing = missingFieldName(activeTab);
         msg.className = "empty-msg";
         if (missing) msg.textContent = text.toast.missing(missing);
         else msg.innerHTML = text.empty;
@@ -2362,6 +2415,138 @@ var qrcodegen;
         return c;
       }
 
+      // ---------- decode tab ----------
+      let decodeImg = null, decodePayload = "";
+      function generateDecode() {
+        payload = ""; hasQr = false;
+        updateActionButtons();
+        updateContrastWarn();
+        updateUrlHint();
+        setScanBadge(null);
+        renderDecodePreview();
+      }
+      function renderDecodePreview() {
+        errorEl.style.display = "none";
+        $("batchGrid").style.display = "none";
+        $("batchNote").style.display = "none";
+        if (decodeImg) {
+          emptyEl.style.display = "none";
+          canvas.width = 480; canvas.height = 480;
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, 480, 480);
+          const w0 = decodeImg.naturalWidth || decodeImg.width, h0 = decodeImg.naturalHeight || decodeImg.height;
+          let sc = Math.min(480 / w0, 480 / h0);
+          if (sc > 2) sc = 2; // small codes: upscale at most 2x so the thumb stays readable
+          const w = Math.round(w0 * sc), h = Math.round(h0 * sc);
+          ctx.drawImage(decodeImg, (480 - w) / 2, (480 - h) / 2, w, h);
+          canvas.style.display = "block";
+          previewEl.classList.remove("solid"); // checkerboard behind transparent images
+        } else {
+          canvas.style.display = "none";
+          emptyEl.style.display = "";
+          renderEmptyState();
+          previewEl.classList.add("solid");
+        }
+      }
+      function showDecodeMsg(ok, msg) {
+        const el = $("decodeMsg");
+        el.style.display = "";
+        el.className = "dmsg " + (ok ? "ok" : "err");
+        el.textContent = msg;
+      }
+      function decodeFromFile(file) {
+        if (!file || !/^image\//.test(file.type)) return;
+        const reader = new FileReader();
+        reader.onload = () => setDecodeImage(String(reader.result));
+        reader.onerror = () => showDecodeMsg(false, text.decode.fail);
+        reader.readAsDataURL(file);
+      }
+      function setDecodeImage(dataUrl) {
+        const img = new Image();
+        img.onload = () => {
+          decodeImg = img;
+          renderDecodePreview();
+          runDecode();
+        };
+        img.onerror = () => showDecodeMsg(false, text.decode.fail);
+        img.src = dataUrl;
+      }
+      function runDecode() {
+        initScanVerify();
+        if (!scanVerify.ready) { showDecodeMsg(false, text.decode.unavailable); return; }
+        try {
+          const w0 = decodeImg.naturalWidth || decodeImg.width, h0 = decodeImg.naturalHeight || decodeImg.height;
+          const sc = Math.min(1, 1600 / Math.max(w0, h0)); // memory cap for huge images
+          const off = document.createElement("canvas");
+          off.width = Math.max(1, Math.round(w0 * sc));
+          off.height = Math.max(1, Math.round(h0 * sc));
+          const octx = off.getContext("2d", { willReadFrequently: true });
+          octx.drawImage(decodeImg, 0, 0, off.width, off.height);
+          let code = null;
+          try { code = window.jsQR(octx.getImageData(0, 0, off.width, off.height).data, off.width, off.height, { inversionAttempts: "attemptBoth" }); } catch (e) { code = null; }
+          if (code && code.data) {
+            decodePayload = code.data;
+            showDecodeResult(code.data);
+          } else {
+            decodePayload = "";
+            $("decodeResult").style.display = "none";
+            showDecodeMsg(false, text.decode.fail);
+          }
+        } catch (e) {
+          showDecodeMsg(false, text.decode.fail);
+        }
+      }
+      function showDecodeResult(data) {
+        $("decodeResult").style.display = "";
+        const meta = historyMetaFor(data);
+        $("decodeKind").textContent = meta.kind === "wifi" ? text.badges.wifi : meta.kind === "vcard" ? text.badges.vcard : (/^https?:\/\//i.test(data) ? text.decode.kindUrl : text.badges.text);
+        $("decodeInfo").textContent = text.charsBytes(Array.from(data).length, new TextEncoder().encode(data).length);
+        $("decodeText").textContent = data;
+        showDecodeMsg(true, text.decode.ok);
+      }
+      $("decodeCopy").addEventListener("click", async () => {
+        if (!decodePayload) return;
+        try {
+          await copyToClipboard(decodePayload);
+          showToast(text.toast.contentCopied);
+        } catch (e) {
+          showToast(text.toast.failed);
+        }
+      });
+      $("decodeReuse").addEventListener("click", () => {
+        if (decodePayload) fillContent(decodePayload);
+      });
+      const dropZone = $("dropZone");
+      dropZone.addEventListener("click", () => $("decodeFile").click());
+      dropZone.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); $("decodeFile").click(); }
+      });
+      dropZone.addEventListener("dragover", (ev) => { ev.preventDefault(); dropZone.classList.add("drag"); });
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("drag"));
+      dropZone.addEventListener("drop", (ev) => {
+        ev.preventDefault();
+        dropZone.classList.remove("drag");
+        const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+        if (f) decodeFromFile(f);
+      });
+      $("decodeFile").addEventListener("change", () => {
+        const f = $("decodeFile").files && $("decodeFile").files[0];
+        if (f) decodeFromFile(f);
+        $("decodeFile").value = "";
+      });
+      document.addEventListener("paste", (ev) => {
+        if (activeTab !== "decode") return;
+        const items = ev.clipboardData && ev.clipboardData.items;
+        if (!items) return;
+        for (const it of items) {
+          if (it.kind === "file" && /^image\//.test(it.type)) {
+            const f = it.getAsFile();
+            if (f) { ev.preventDefault(); decodeFromFile(f); }
+            return;
+          }
+        }
+      });
+
       // ---------- history ----------
       const HISTORY_KEY = "history";
       const HISTORY_MAX = 20;
@@ -2412,6 +2597,8 @@ var qrcodegen;
       }
       function renderHistory() {
         const box = $("historyBox");
+        if (activeTab === "decode") { box.style.display = "none"; return; } // decoding never touches history
+        box.style.display = "";
         const kindEntries = historyEntries.filter((h) => h.kind === activeTab);
         $("historyCount").textContent = kindEntries.length ? `(${kindEntries.length})` : "";
         const list = $("historyList");
@@ -2462,7 +2649,11 @@ var qrcodegen;
         style.fg = s.fg; style.bg = s.bg; style.shape = s.shape;
         style.margin = s.margin; style.ecc = s.ecc; style.logo = s.logo; style.logoScale = s.logoScale;
         syncStyleInputs();
-        const payloadStr = h.content;
+        fillContent(h.content);
+      }
+      // Content-only backfill shared by history restore and decode reuse:
+      // routes by payload type, never touches style state.
+      function fillContent(payloadStr) {
         if (payloadStr.startsWith("WIFI:")) {
           switchTab("wifi");
           const m = payloadStr.match(/^WIFI:T:([^;]*);S:((?:[^;\\]|\\.)*)/);
@@ -2676,7 +2867,7 @@ var qrcodegen;
       }
       document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
       document.querySelector(".tabs").addEventListener("keydown", (ev) => {
-        const order = ["text", "wifi", "vcard"];
+        const order = ["text", "wifi", "vcard", "decode"];
         const idx = order.indexOf(activeTab);
         let next = null;
         if (ev.key === "ArrowRight") next = order[(idx + 1) % order.length];
