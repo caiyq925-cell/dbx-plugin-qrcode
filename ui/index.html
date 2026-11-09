@@ -94,6 +94,29 @@
 
       .meta { font-size: 11.5px; opacity: .55; margin: 4px 0 0; }
       .meta.warn { color: #d97706; opacity: 1; font-weight: 600; }
+      .suggest {
+        display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin: 8px 0 0; padding: 8px 10px; border-radius: 10px; font-size: 12.5px;
+        border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+        background: color-mix(in srgb, var(--accent) 7%, Canvas);
+      }
+      .suggest .sp, .warnbar .sp { flex: 1; min-width: 0; }
+      .warnbar {
+        display: none; align-items: center; gap: 8px; flex-wrap: wrap;
+        margin: 0 0 10px; padding: 8px 10px; border-radius: 10px; font-size: 12.5px;
+        border: 1px solid color-mix(in srgb, #d97706 45%, transparent);
+        background: color-mix(in srgb, #d97706 12%, Canvas);
+      }
+      .warnbar.show { display: flex; }
+      .pchips { display: flex; flex-wrap: wrap; gap: 6px; }
+      .pchip { display: inline-flex; align-items: center; border: 1px solid var(--border); border-radius: 999px; background: var(--field); font-size: 12px; }
+      .pchip .pname { border: 0; background: none; color: inherit; font: inherit; font-size: 12px; padding: 4px 4px 4px 10px; cursor: pointer; }
+      .pchip .pname:hover { color: var(--accent); }
+      .pchip .pdel {
+        border: 0; background: none; color: inherit; opacity: .4; cursor: pointer;
+        font-size: 13px; line-height: 1; padding: 4px 8px 4px 2px;
+      }
+      .pchip .pdel:hover { opacity: 1; color: #e5484d; }
       .empty-msg { margin: 0; }
       .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
       .chip {
@@ -270,6 +293,12 @@
       <div class="panel active" data-panel="text">
         <textarea id="textContent" spellcheck="false"></textarea>
         <p class="meta" id="textMeta"></p>
+        <div class="suggest" id="urlHint" style="display:none">
+          <span id="urlHintMsg"></span>
+          <span class="sp"></span>
+          <button class="ghostbtn" id="urlHintApply" type="button"></button>
+          <button class="ghostbtn" id="urlHintDismiss" type="button"></button>
+        </div>
       </div>
 
       <div class="panel" data-panel="wifi">
@@ -309,6 +338,11 @@
       </div>
 
       <aside class="colR">
+        <div class="warnbar" id="warn">
+          <span id="warnMsg"></span>
+          <span class="sp"></span>
+          <button class="ghostbtn" id="warnReset" type="button"></button>
+        </div>
         <section class="preview solid" id="preview">
           <canvas id="canvas" width="480" height="480"></canvas>
           <div id="empty"></div>
@@ -318,6 +352,10 @@
         <div class="actions">
           <button class="act" id="save" type="button" disabled></button>
           <div class="actions-sub">
+            <select id="fmt" aria-label="Format">
+              <option value="png">PNG</option>
+              <option value="svg">SVG</option>
+            </select>
             <select id="px" aria-label="PNG size">
               <option value="256">256px</option>
               <option value="512" selected>512px</option>
@@ -341,6 +379,13 @@
       <details class="styleset" id="styleBox">
         <summary><span id="styleSummary"></span><button class="ghostbtn summary-reset" id="resetStyle" type="button"></button></summary>
         <div class="stylebody">
+          <div class="field" id="presetSection" style="display:none">
+            <label id="presetLabel"></label>
+            <div class="pchips" id="presetChips"></div>
+            <p class="hint" id="presetUnavailable" style="display:none"></p>
+            <div class="logo-actions"><button class="ghostbtn" id="savePreset" type="button"></button></div>
+          </div>
+
           <div class="field"><label id="logoLabel"></label>
             <div class="logo-actions">
               <label class="filebtn" for="logoFile" id="logoPickLabel"></label>
@@ -1266,6 +1311,9 @@ var qrcodegen;
           tabs: { text: "Text / URL", wifi: "Wi-Fi", vcard: "Contact" },
           styleLabel: "Style settings",
           textPlaceholder: "https://example.com or any text…",
+          urlHint: { msg: "This looks like a web address.", apply: "Use https://", dismiss: "Keep as text" },
+          warn: { low: "Low contrast — the code may be hard to scan.", reset: "Restore default colors" },
+          preset: { label: "Style presets", save: "Save as preset", defaultName: (n) => `Preset ${n}`, limit: "Up to 8 presets — delete one first", saved: "Preset saved", delTitle: "Delete preset", delBody: "Preset “{name}” will be removed. This cannot be undone.", delConfirm: "Delete", unavailable: "Preset saving is not available in this host" },
           charsBytes: (c, b) => `${c} chars · ${b} bytes`,
           countWarn: " · near capacity limit",
           chips: { text: "URL example", wifi: "Wi-Fi example", vcard: "Contact example" },
@@ -1273,7 +1321,7 @@ var qrcodegen;
           wifi: { ssid: "Network name (SSID)", pass: "Password", enc: "Security", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "None (open)", hidden: "Hidden network" },
           vcard: { name: "Name *", phone: "Phone", email: "Email", url: "Website", org: "Company", title: "Job title", note: "Note", more: "More fields" },
           style: { fg: "Foreground", bg: "Background", shape: "Module shape", square: "Square", rounded: "Rounded", dots: "Dots", margin: "Quiet zone", ecc: "Error correction", logo: "Center logo", pick: "Choose image…", clear: "Remove", hint: "A logo needs stronger error correction — ECC H is used automatically when a logo is set.", transparent: "Transparent background", reset: "Reset style", eccL: "L — smallest", eccM: "M — recommended", eccQ: "Q", eccH: "H — strongest", logoClearTitle: "Remove logo", logoClearBody: "The centered logo will be removed from the QR code.", logoClearConfirm: "Remove" },
-          actions: { save: "Save PNG", copyImg: "Copy Image", copyText: "Copy Content" },
+          actions: { save: "Save PNG", copyImg: "Copy Image", copyText: "Copy Content", format: "Export format" },
           empty: "Your QR code will appear here.<br>Fill in any tab above.",
           history: { label: "History", empty: "No history yet", clear: "Clear", saved: "History storage is unavailable in this host", modalTitle: "Clear history", modalBody: "All {type} entries will be removed from history. This cannot be undone.", confirm: "Clear", cancel: "Cancel" },
           toast: {
@@ -1293,6 +1341,9 @@ var qrcodegen;
           tabs: { text: "文本 / 网址", wifi: "WiFi", vcard: "名片" },
           styleLabel: "样式设置",
           textPlaceholder: "https://example.com 或任意文字…",
+          urlHint: { msg: "这看起来像一个网址。", apply: "补全 https://", dismiss: "保持纯文本" },
+          warn: { low: "对比度过低，扫码可能失败。", reset: "恢复默认配色" },
+          preset: { label: "样式预设", save: "保存为预设", defaultName: (n) => `预设 ${n}`, limit: "最多保存 8 个预设，请先删除", saved: "预设已保存", delTitle: "删除预设", delBody: "将删除预设「{name}」，此操作不可撤销。", delConfirm: "删除", unavailable: "当前宿主不支持保存预设" },
           charsBytes: (c, b) => `${c} 字符 · ${b} 字节`,
           countWarn: " · 接近容量上限",
           chips: { text: "网址示例", wifi: "WiFi 示例", vcard: "名片示例" },
@@ -1300,7 +1351,7 @@ var qrcodegen;
           wifi: { ssid: "网络名称（SSID）", pass: "密码", enc: "加密方式", wpa: "WPA / WPA2 / WPA3", wep: "WEP", nopass: "无加密（开放网络）", hidden: "隐藏网络" },
           vcard: { name: "姓名 *", phone: "手机", email: "邮箱", url: "网址", org: "公司", title: "职位", note: "备注", more: "更多信息" },
           style: { fg: "前景色", bg: "背景色", shape: "码点形状", square: "方块", rounded: "圆角", dots: "圆点", margin: "留白边距", ecc: "纠错级别", logo: "中心 Logo", pick: "选择图片…", clear: "移除", hint: "添加 Logo 会降低扫码容错，设置 Logo 后将自动改用 H 级纠错。", transparent: "透明背景", reset: "恢复默认样式", eccL: "L — 体积最小", eccM: "M — 推荐", eccQ: "Q", eccH: "H — 容错最强", logoClearTitle: "移除中心 Logo", logoClearBody: "将从二维码中移除已设置的中心 Logo。", logoClearConfirm: "确认移除" },
-          actions: { save: "保存 PNG", copyImg: "复制图片", copyText: "复制内容" },
+          actions: { save: "保存 PNG", copyImg: "复制图片", copyText: "复制内容", format: "导出格式" },
           empty: "二维码会显示在这里<br>在上方任意页签填写内容即可",
           history: { label: "历史记录", empty: "暂无历史记录", clear: "清空", saved: "当前宿主不支持保存历史", modalTitle: "清空历史记录", modalBody: "将删除全部「{type}」类型的历史记录，此操作不可撤销。", confirm: "确认清空", cancel: "取消" },
           toast: {
@@ -1325,6 +1376,14 @@ var qrcodegen;
         document.querySelectorAll(".tab").forEach((t) => { t.textContent = text.tabs[t.dataset.tab]; });
         $("styleSummary").textContent = text.styleLabel;
         $("textContent").placeholder = text.textPlaceholder;
+        $("urlHintMsg").textContent = text.urlHint.msg;
+        $("urlHintApply").textContent = text.urlHint.apply;
+        $("urlHintDismiss").textContent = text.urlHint.dismiss;
+        $("warnMsg").textContent = text.warn.low;
+        $("warnReset").textContent = text.warn.reset;
+        $("presetLabel").textContent = text.preset.label;
+        $("savePreset").textContent = text.preset.save;
+        $("presetUnavailable").textContent = text.preset.unavailable;
         $("wifiSsidLabel").textContent = text.wifi.ssid;
         $("wifiPassLabel").textContent = text.wifi.pass;
         $("wifiEncLabel").textContent = text.wifi.enc;
@@ -1363,6 +1422,8 @@ var qrcodegen;
         btnSave.textContent = text.actions.save;
         btnCopyImg.textContent = text.actions.copyImg;
         btnCopyText.textContent = text.actions.copyText;
+        $("fmt").setAttribute("aria-label", text.actions.format);
+        $("fmt").setAttribute("title", text.actions.format);
         $("historyLabel").textContent = text.history.label;
         $("clearHistory").textContent = text.history.clear;
         renderHistory();
@@ -1533,9 +1594,69 @@ var qrcodegen;
         el.textContent = text.charsBytes(chars, bytes) + (near ? text.countWarn : "");
         el.classList.toggle("warn", near);
       }
+
+      // ---------- smart input: bare-domain URL suggestion ----------
+      // Conservative heuristic (design: better to miss than to misfire):
+      // dot-separated host with a 2+ letter TLD, optional path, no spaces,
+      // and no existing scheme. Pure addresses like 192.168.1.1 also match;
+      // completing them stays semantically valid, so that is accepted.
+      const BARE_DOMAIN_RE = /^[a-z0-9][a-z0-9.-]*\.[a-z]{2,}(\/\S*)?$/i;
+      const urlHintIgnore = new Set(); // session memory, keyed by exact content
+      function urlHintTarget() {
+        if (activeTab !== "text") return null;
+        const v = $("textContent").value.trim();
+        if (!v || /\s/.test(v) || urlHintIgnore.has(v)) return null;
+        if (/^[a-z][a-z0-9+.-]*:/i.test(v)) return null; // already has a scheme
+        return BARE_DOMAIN_RE.test(v) ? v : null;
+      }
+      function updateUrlHint() {
+        $("urlHint").style.display = urlHintTarget() ? "flex" : "none";
+      }
+      $("urlHintApply").addEventListener("click", () => {
+        const t = urlHintTarget();
+        if (!t) return;
+        urlHintIgnore.add(t); // re-typing the same bare content stays quiet
+        $("textContent").value = "https://" + t;
+        $("textContent").dispatchEvent(new Event("input", { bubbles: true }));
+        scheduleGenerate(0);
+      });
+      $("urlHintDismiss").addEventListener("click", () => {
+        const t = urlHintTarget();
+        if (t) urlHintIgnore.add(t);
+        updateUrlHint();
+      });
+
+      // ---------- scannability guard: WCAG contrast ----------
+      function relLuminance(hex) {
+        const n = parseInt(hex.slice(1), 16);
+        const ch = (v) => {
+          v /= 255;
+          return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        };
+        return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255);
+      }
+      function contrastRatio(a, b) {
+        const la = relLuminance(a), lb = relLuminance(b);
+        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+      }
+      // 3:1 is the WCAG non-text (graphics) bar; transparent backgrounds are
+      // estimated against white, matching how transparent codes are usually
+      // placed. Advisory only — generation and export stay unaffected.
+      function updateContrastWarn() {
+        const bad = hasQr && contrastRatio(style.fg, style.transparentBg ? "#ffffff" : style.bg) < 3;
+        $("warn").classList.toggle("show", bad);
+      }
+      $("warnReset").addEventListener("click", () => {
+        style.fg = DEFAULT_STYLE.fg;
+        style.bg = DEFAULT_STYLE.bg;
+        style.transparentBg = DEFAULT_STYLE.transparentBg;
+        syncStyleInputs();
+        scheduleGenerate(0);
+      });
       function generate() {
         payload = buildPayload();
         updateCounter();
+        updateUrlHint();
         updateActionButtons();
         if (!payload) return showEmpty();
         const ecc = style.logo ? "H" : style.ecc;
@@ -1558,6 +1679,7 @@ var qrcodegen;
         previewEl.classList.toggle("solid", !style.transparentBg);
         hasQr = true;
         updateActionButtons();
+        updateContrastWarn();
       }
       const EXAMPLE_CHIPS = ["text", "wifi", "vcard"];
       const stripStar = (s) => String(s).replace(/\s*\*\s*$/, "");
@@ -1623,6 +1745,7 @@ var qrcodegen;
         renderEmptyState();
         previewEl.classList.add("solid");
         updateActionButtons();
+        updateContrastWarn();
       }
       function showError(msg, opts = {}) {
         hasQr = false;
@@ -1646,6 +1769,7 @@ var qrcodegen;
         }
         previewEl.classList.add("solid");
         updateActionButtons();
+        updateContrastWarn();
       }
       function downgradeEcc() {
         style.ecc = "L";
@@ -1669,19 +1793,125 @@ var qrcodegen;
         }
       }
 
+      // ---------- SVG export ----------
+      // Same geometry as renderQr, expressed in module units (1 unit = 1
+      // module; the viewBox spans the quiet zone) so the vector output is a
+      // 1:1 translation of the canvas: 0.08 dot pad, rounded-eye stack
+      // (rx 2.1 / 1.4 / 0.9), opaque white eye ring on transparent
+      // backgrounds, rounded logo backplate + embedded data-URL image.
+      function qrToSvg(qr, s) {
+        const count = qr.size;
+        const total = count + s.margin * 2;
+        const pad = 0.08;
+        const esc = (v) => String(v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const parts = [];
+        if (!s.transparentBg) parts.push(`<rect width="${total}" height="${total}" fill="${esc(s.bg)}"/>`);
+        const inFinder = (x, y) => (y < 7 && (x < 7 || x >= count - 7)) || (y >= count - 7 && x < 7);
+        if (s.shape === "square") {
+          const rects = [];
+          for (let y = 0; y < count; y++) {
+            for (let x = 0; x < count; x++) {
+              if (qr.getModule(x, y)) rects.push(`<rect x="${x + s.margin}" y="${y + s.margin}" width="1" height="1"/>`);
+            }
+          }
+          parts.push(`<g fill="${esc(s.fg)}">${rects.join("")}</g>`);
+        } else {
+          const shapes = [];
+          for (let y = 0; y < count; y++) {
+            for (let x = 0; x < count; x++) {
+              if (!qr.getModule(x, y) || inFinder(x, y)) continue;
+              const px = x + s.margin + pad / 2, py = y + s.margin + pad / 2, wh = 1 - pad;
+              shapes.push(
+                s.shape === "dots"
+                  ? `<circle cx="${px + wh / 2}" cy="${py + wh / 2}" r="${wh / 2}"/>`
+                  : `<rect x="${px}" y="${py}" width="${wh}" height="${wh}" rx="${(wh * 0.32).toFixed(3)}"/>`
+              );
+            }
+          }
+          parts.push(`<g fill="${esc(s.fg)}">${shapes.join("")}</g>`);
+          const eye = (cx, cy) =>
+            `<g fill="${esc(s.fg)}"><rect x="${cx + s.margin}" y="${cy + s.margin}" width="7" height="7" rx="2.1"/>` +
+            `<rect x="${cx + s.margin + 1}" y="${cy + s.margin + 1}" width="5" height="5" rx="1.4" fill="${s.transparentBg ? "#ffffff" : esc(s.bg)}"/>` +
+            `<rect x="${cx + s.margin + 2}" y="${cy + s.margin + 2}" width="3" height="3" rx="0.9"/></g>`;
+          parts.push(eye(0, 0), eye(count - 7, 0), eye(0, count - 7));
+        }
+        if (s.logo) {
+          const patch = total * s.logoScale;
+          const x = (total - patch) / 2;
+          parts.push(`<rect x="${x}" y="${x}" width="${patch}" height="${patch}" rx="${(patch * 0.18).toFixed(3)}" fill="${s.transparentBg ? "#ffffff" : esc(s.bg)}"/>`);
+          const img = logoImage(s.logo);
+          if (img) {
+            const inner = patch * 0.82;
+            const r = Math.min(inner / img.width, inner / img.height);
+            const w = img.width * r, h = img.height * r;
+            const href = esc(s.logo);
+            parts.push(`<image x="${((total - w) / 2).toFixed(3)}" y="${((total - h) / 2).toFixed(3)}" width="${w.toFixed(3)}" height="${h.toFixed(3)}" preserveAspectRatio="xMidYMid meet" href="${href}" xlink:href="${href}"/>`);
+          }
+        }
+        return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${total} ${total}" width="${total * 16}" height="${total * 16}">${parts.join("")}</svg>`;
+      }
+      function exportSvg() {
+        if (!hasQr || !payload) return null;
+        const ecc = style.logo ? "H" : style.ecc;
+        try {
+          const qr = qrcodegen.QrCode.encodeText(payload, qrcodegen.QrCode.Ecc[ecc === "L" ? "LOW" : ecc === "M" ? "MEDIUM" : ecc === "Q" ? "QUARTILE" : "HIGH"]);
+          return qrToSvg(qr, style);
+        } catch (e) {
+          return null;
+        }
+      }
+      function toBase64Utf8(str) {
+        const bytes = new TextEncoder().encode(str);
+        let bin = "";
+        for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+        return btoa(bin);
+      }
+      // Semantic file names: URL → hostname, Wi-Fi → SSID, vCard → name,
+      // other text → truncated content. Windows-illegal characters become
+      // "_" so the suggestion stays a valid file name in the save dialog.
+      function suggestFileName(payloadStr, ext, px) {
+        let base = null;
+        if (/^https?:\/\//i.test(payloadStr)) {
+          try {
+            base = new URL(payloadStr).hostname;
+          } catch (e) { /* fall through to the generic extractor */ }
+        }
+        if (!base) {
+          const meta = historyMetaFor(payloadStr);
+          base = meta.kind === "wifi" ? `wifi-${meta.title}` : meta.kind === "vcard" ? `vcard-${meta.title}` : meta.title;
+        }
+        base = String(base).replace(/[\\/:*?"<>|]/g, "_").trim().replace(/^\.+/, "") || "qrcode";
+        return px ? `${base}-${px}px.${ext}` : `${base}.${ext}`;
+      }
+
       // ---------- actions ----------
       btnSave.addEventListener("click", async () => {
+        if (!hasQr || !payload) return showToast(text.toast.failed);
         const px = Number($("px").value);
-        const c = exportCanvas(px);
-        if (!c) return showToast(text.toast.failed);
-        const fileName = `qrcode-${px}px.png`;
+        const isSvg = $("fmt").value === "svg";
+        let data, fileName, contentType, downloadHref;
+        if (isSvg) {
+          const svg = exportSvg();
+          if (!svg) return showToast(text.toast.failed);
+          data = toBase64Utf8(svg);
+          fileName = suggestFileName(payload, "svg");
+          contentType = "image/svg+xml";
+          downloadHref = URL.createObjectURL(new Blob([svg], { type: contentType }));
+        } else {
+          const c = exportCanvas(px);
+          if (!c) return showToast(text.toast.failed);
+          const dataUrl = c.toDataURL("image/png");
+          data = dataUrl.split(",")[1];
+          fileName = suggestFileName(payload, "png", px);
+          contentType = "image/png";
+          downloadHref = dataUrl;
+        }
         // The sandboxed iframe cannot trigger downloads — inside the DBX host
         // hand the bytes to the host's native save dialog; standalone browser
         // previews fall back to a regular download link.
         if (window.dbxPlugin && typeof window.dbxPlugin.saveFile === "function") {
           try {
-            const b64 = c.toDataURL("image/png").split(",")[1];
-            await window.dbxPlugin.saveFile({ fileName, contentType: "image/png" }, b64);
+            await window.dbxPlugin.saveFile({ fileName, contentType }, data);
             showToast(text.toast.savedFile);
             recordHistoryNow();
           } catch (e) {
@@ -1690,16 +1920,19 @@ var qrcodegen;
           }
         } else {
           const a = document.createElement("a");
-          a.href = c.toDataURL("image/png");
+          a.href = downloadHref;
           a.download = fileName;
           a.click();
+          if (isSvg) URL.revokeObjectURL(downloadHref);
           showToast(text.toast.saved);
           recordHistoryNow();
         }
       });
 
       btnCopyImg.addEventListener("click", async () => {
-        const c = exportCanvas(512);
+        // Copy is always a PNG bitmap (clipboards have no SVG type) and
+        // follows the size selector like the PNG export path does.
+        const c = exportCanvas(Number($("px").value));
         if (!c) return showToast(text.toast.failed);
         try {
           const blob = await new Promise((res, rej) => c.toBlob((b) => (b ? res(b) : rej(new Error("toBlob"))), "image/png"));
@@ -1916,6 +2149,94 @@ var qrcodegen;
         pushHistory(meta.kind, meta.title, payload);
       }
 
+      // ---------- style presets ----------
+      // Presets live in their own host.storage key, separate from history:
+      // different lifecycle (explicitly managed vs rolling window), and no
+      // localStorage fallback — a missing host.storage just hides the entry.
+      const PRESETS_KEY = "presets";
+      const PRESETS_MAX = 8;
+      let presets = [];
+      const presetsAvailable = () => canHostStorage();
+      function initPresetUi() {
+        $("presetSection").style.display = "";
+        $("savePreset").style.display = presetsAvailable() ? "" : "none";
+        $("presetUnavailable").style.display = presetsAvailable() ? "none" : "";
+      }
+      async function loadPresets() {
+        if (presetsAvailable()) {
+          try {
+            presets = (await window.dbxPlugin.storage.get(PRESETS_KEY)) || [];
+          } catch (e) {
+            presets = [];
+          }
+          if (!Array.isArray(presets)) presets = [];
+        } else {
+          presets = [];
+        }
+        renderPresets();
+      }
+      async function persistPresets() {
+        try {
+          await window.dbxPlugin.storage.set(PRESETS_KEY, presets);
+        } catch (e) {
+          showToast(text.history.saved);
+        }
+      }
+      function renderPresets() {
+        const chips = $("presetChips");
+        chips.textContent = "";
+        for (const p of presets) {
+          const chip = document.createElement("span");
+          chip.className = "pchip";
+          const name = document.createElement("button");
+          name.type = "button";
+          name.className = "pname";
+          name.textContent = p.name;
+          name.addEventListener("click", () => applyPreset(p));
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "pdel";
+          del.textContent = "×";
+          del.setAttribute("aria-label", "delete");
+          del.addEventListener("click", () => {
+            openConfirm({
+              title: text.preset.delTitle,
+              body: text.preset.delBody.replace("{name}", p.name),
+              confirm: text.preset.delConfirm,
+              cancel: text.history.cancel,
+              onConfirm: () => {
+                presets = presets.filter((x) => x.id !== p.id);
+                persistPresets();
+                renderPresets();
+              },
+            });
+          });
+          chip.append(name, del);
+          chips.appendChild(chip);
+        }
+      }
+      // Applying a preset swaps the whole style state; tab content is untouched.
+      function applyPreset(p) {
+        const s = { ...DEFAULT_STYLE, ...p.style };
+        style.fg = s.fg; style.bg = s.bg; style.shape = s.shape; style.margin = s.margin;
+        style.ecc = s.ecc; style.logo = s.logo; style.logoScale = s.logoScale;
+        style.transparentBg = s.transparentBg;
+        syncStyleInputs();
+        scheduleGenerate(0);
+      }
+      $("savePreset").addEventListener("click", () => {
+        if (presets.length >= PRESETS_MAX) return showToast(text.preset.limit);
+        const preset = {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          name: text.preset.defaultName(presets.length + 1),
+          style: JSON.parse(JSON.stringify(style)),
+        };
+        presets.push(preset);
+        persistPresets();
+        renderPresets();
+        showToast(text.preset.saved);
+      });
+
       // ---------- tabs ----------
       function switchTab(name) {
         activeTab = name;
@@ -2057,8 +2378,10 @@ var qrcodegen;
       if (hostAppearance === "dark" || hostAppearance === "light") document.documentElement.dataset.theme = hostAppearance;
       text = (hostLocale || navigator.language || "en").toLowerCase().startsWith("zh") ? copy.zh : copy.en;
       applyLocale();
+      initPresetUi();
       syncStyleInputs();
       loadHistory();
+      loadPresets();
       generate();
 
       if (window.dbxPlugin && window.dbxPlugin.ready) {
