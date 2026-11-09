@@ -1759,10 +1759,18 @@ var qrcodegen;
           if (!scanVerify.ready) return;
         }
         try {
-          const ctx = canvas.getContext("2d", { willReadFrequently: true });
-          const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          // Composite onto white first: jsQR treats transparent pixels as
+          // black, but transparent codes are shown on light backgrounds by
+          // real scanners — decoding the raw alpha canvas would false-fail.
+          const w = canvas.width, h = canvas.height;
+          const off = document.createElement("canvas");
+          off.width = w; off.height = h;
+          const octx = off.getContext("2d", { willReadFrequently: true });
+          octx.fillStyle = "#ffffff";
+          octx.fillRect(0, 0, w, h);
+          octx.drawImage(canvas, 0, 0);
           let code = null;
-          try { code = window.jsQR(data.data, canvas.width, canvas.height); } catch (e) { code = null; }
+          try { code = window.jsQR(octx.getImageData(0, 0, w, h).data, w, h); } catch (e) { code = null; }
           setScanBadge(code && code.data === payload ? "ok" : "bad");
         } catch (e) {
           setScanBadge(null);
