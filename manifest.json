@@ -3,9 +3,9 @@
   "manifest_version": 1,
   "id": "com.caiyq925.qrcode",
   "name": "QR Code Generator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "caiyq925",
-  "description": "Generate QR codes from text, Wi-Fi networks or contact cards, with custom colors, module shapes and a centered logo. Export PNG, copy to clipboard, and keep a history of recent codes.",
+  "description": "Generate QR codes from text, Wi-Fi networks or contact cards, with custom colors, module shapes and a centered logo. Decode QR images locally (paste/drop/upload), export PNG or SVG, copy to clipboard, keep a history and named style presets.",
   "icon": "assets/plugin.svg",
   "engines": {
     "dbx": ">=0.5.68",
@@ -32,11 +32,11 @@
   "localizations": {
     "zh-CN": {
       "name": "二维码工具",
-      "description": "文本、Wi-Fi、名片一键生成二维码：自定义颜色、码点形状与中心 Logo，导出 PNG、复制到剪贴板，并保留历史记录。",
+      "description": "文本、Wi-Fi、名片一键生成二维码：自定义颜色、码点形状与中心 Logo，本地解码识别二维码图片（粘贴/拖拽/上传），导出 PNG/SVG、复制到剪贴板，支持历史记录与样式预设。",
       "contributions": {
         "com.caiyq925.qrcode.workbench": {
           "label": "二维码工具",
-          "description": "文本、Wi-Fi、名片生成二维码，支持自定义样式、导出 PNG 与历史记录。"
+          "description": "文本、Wi-Fi、名片生成二维码，图片解码识别，自定义样式、预设、导出 PNG/SVG 与历史记录。"
         }
       }
     }
