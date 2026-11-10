@@ -36,13 +36,31 @@ dbx-plugin dev --path . --port 5190
 
 No backend or DBX application is required. Open the workbench from the development shell at `http://127.0.0.1:5190/`. `.dbx-dev/` stores local dev data and must not be committed or packaged.
 
-## Package
+## Package & release automation
 
 ```bash
 dbx-plugin package .
 ```
 
 Writes an unsigned universal `.dbxp` candidate plus `.artifact.json` into `dist/`.
+
+To have the DBX Store automatically open/update the candidate PR for a release, publish a GitHub Release with **three** assets:
+
+1. the unsigned `.dbxp` candidate (e.g. `com.caiyq925.qrcode-0.2.0-universal.dbxp`);
+2. `release-candidates.json` — the plugin identity plus the packaged artifact, exactly what `dbx-plugin package .` prints in `dist/*.artifact.json`, wrapped with the manifest identity:
+
+   ```json
+   {
+     "plugin": { "id": "com.caiyq925.qrcode", "publisher": "caiyq925", "version": "0.2.0" },
+     "artifacts": [
+       { "target": "universal", "url": "com.caiyq925.qrcode-0.2.0-universal.dbxp", "sha256": "<64 hex>", "size": 89634 }
+     ]
+   }
+   ```
+
+3. (optional) any extra release notes assets.
+
+The store synchronizer polls repos registered in `automation/plugin-sources.json` (`autoUpdate: true`), reads the latest release's `release-candidates.json`, and opens/updates the candidate PR. Listing metadata (name/description/icon/localizations) comes from `.dbx-store.json` at the release tag.
 
 ## Submit to the marketplace
 
